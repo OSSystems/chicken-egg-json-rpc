@@ -1,0 +1,5 @@
+;;;; -*- scheme -*-
+((synopsis "A simple JSON RPC client/server")
+ (author "O.S. Systems")
+ (egg "json-rpc.egg")
+ )

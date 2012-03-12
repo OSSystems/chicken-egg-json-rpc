@@ -1,0 +1,8 @@
+;;; json-rpc.setup -*- scheme -*-
+
+(compile -s -O3 -d1 -J json-rpc-client.scm)
+(compile -s -O3 -d1 json-rpc-client.import.scm)
+
+(install-extension 'json-rpc-client
+                    '("json-rpc-client.so"
+                      "json-rpc-client.import.so"))
