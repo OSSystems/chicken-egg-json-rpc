@@ -1,6 +1,6 @@
 (module json-rpc-client
   (connect! disconnect! json-call register-signal-handler!)
-  
+
 (import chicken scheme ports data-structures posix extras srfi-1)
 (use json tcp srfi-18)
 
@@ -113,10 +113,11 @@
         (send-message! req-data-str *outport*)
         (let loop ()
           ; (debug *available-results*)
-          (thread-sleep! 1)
           (or (and-let* ((res (get-result id)))
                 res)
-              (loop)))))))
+              (begin
+                (thread-sleep! 0.1)
+                (loop))))))))
 
 
 (define *available-results* '())
