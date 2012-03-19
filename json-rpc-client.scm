@@ -120,6 +120,9 @@
                 (loop))))))))
 
 
+(define-record no-result)
+(define no-result (make-no-result))
+
 (define *available-results* '())
 
 (define (add-available-result! method)
