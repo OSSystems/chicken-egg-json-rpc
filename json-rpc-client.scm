@@ -113,11 +113,12 @@
         (send-message! req-data-str *outport*)
         (let loop ()
           ; (debug *available-results*)
-          (or (and-let* ((res (get-result id)))
-                res)
-              (begin
-                (thread-sleep! 0.1)
-                (loop))))))))
+          (let ((res (get-result id)))
+            (if (no-result? res)
+                (begin
+                  (thread-sleep! 0.1)
+                  (loop))
+                res)))))))
 
 
 (define-record no-result)
@@ -125,19 +126,28 @@
 
 (define *available-results* '())
 
+(define results-mutex (make-mutex))
+
 (define (add-available-result! method)
+  (mutex-lock! results-mutex)
   (set! *available-results*
         (cons (cons (method-id method) (method-result method))
-              *available-results*)))
-
-
-(define (remove-available-result! method-id)
-  (set! *available-results*
-        (alist-delete method-id *available-results* equal?)))
+              *available-results*))
+  (mutex-unlock! results-mutex))
 
 
 (define (get-result id)
-  (alist-ref id *available-results* equal?))
+  (mutex-lock! results-mutex)
+  (let ((result (assq id *available-results*)))
+    (if result
+        (begin
+          (set! *available-results*
+                (alist-delete id *available-results*))
+          (mutex-unlock! results-mutex)
+          (cdr result))
+        (begin
+          (mutex-unlock! results-mutex)
+          no-result))))
 
 
 (define (json-rpc-dispatcher)
