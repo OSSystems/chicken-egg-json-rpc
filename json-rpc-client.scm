@@ -2,7 +2,7 @@
   (connect! disconnect! json-call register-signal-handler!)
 
 (import chicken scheme ports data-structures posix extras srfi-1)
-(use json tcp srfi-18)
+(use json tcp srfi-18 channel)
 
 (include "common.scm")
 
@@ -104,6 +104,7 @@
   (let ((id 0))
     (lambda (method #!optional args)
       (set! id (+ id 1))
+      (debug "=============================== sending = " id)
       (let* ((req-data (make-request method args id))
              (req-data-str
               (with-output-to-string
@@ -124,30 +125,22 @@
 (define-record no-result)
 (define no-result (make-no-result))
 
-(define *available-results* '())
-
-(define results-mutex (make-mutex))
+(define *available-results* (make-channel))
 
 (define (add-available-result! method)
-  (mutex-lock! results-mutex)
-  (set! *available-results*
-        (cons (cons (method-id method) (method-result method))
-              *available-results*))
-  (mutex-unlock! results-mutex))
+  (channel-enqueue *available-results* method))
 
 
 (define (get-result id)
-  (mutex-lock! results-mutex)
-  (let ((result (assq id *available-results*)))
-    (if result
+  (let* ((reply (channel-receive *available-results*))
+         (res (method-result reply))
+         (reply-id (method-id reply)))
+    (if (or (no-result? res)
+            (not (eq? reply-id id)))
         (begin
-          (set! *available-results*
-                (alist-delete id *available-results*))
-          (mutex-unlock! results-mutex)
-          (cdr result))
-        (begin
-          (mutex-unlock! results-mutex)
-          no-result))))
+          (thread-sleep! 0.1)
+          (get-result id))
+        res)))
 
 
 (define (json-rpc-dispatcher)
@@ -164,6 +157,7 @@
                ((signal? response)
                 (signal-call (signal-proc response) (signal-args response)))
                ((method? response)
+                (debug "###################################### receving " (method-id response))
                 (add-available-result! response))
                (else (error 'dispatcher "Unknonw object" response))))
        (loop)))))

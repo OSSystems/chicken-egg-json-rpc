@@ -1,6 +1,6 @@
 ;;;; -*- scheme -*-
 ((synopsis "A simple JSON RPC client/server")
  (author "O.S. Systems")
- (depends json)
+ (depends json channel)
  (egg "json-rpc.egg")
  )
