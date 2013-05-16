@@ -2,5 +2,6 @@
 ((synopsis "A simple JSON RPC client/server")
  (author "O.S. Systems")
  (depends json channel)
+ (test-depends test)
  (egg "json-rpc.egg")
  )
